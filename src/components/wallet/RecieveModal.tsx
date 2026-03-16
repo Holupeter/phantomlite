@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { Modal } from '@/components/ui/Modal'
 import { useWallet } from '@/hooks/useWallet'
 import { shortenAddress } from '@/lib/utils'
-import QRCode from 'qrcode.react'
+import { QRCodeSVG } from 'qrcode.react'
 import { Copy, Check } from 'lucide-react'
 
 const NETWORKS = ['ETH', 'SOL', 'USDC', 'MATIC']
@@ -64,7 +64,7 @@ export function ReceiveModal({ isOpen, onClose }: ReceiveModalProps) {
           transition={{ duration: 0.2 }}
           className="p-4 bg-white rounded-2xl"
         >
-          <QRCode
+          <QRCodeSVG
             value={displayAddress}
             size={160}
             bgColor="#ffffff"
