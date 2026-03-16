@@ -4,7 +4,7 @@ A frontend crypto wallet simulation that mimics Phantom Wallet.
 Built as a portfolio project to demonstrate senior-level frontend skills.
 
 ## Live Demo
-[View on Vercel](#) ← update after deployment
+[View on Vercel](https://phantomlite.vercel.app)
 
 ## Features
 - 🔐 Create wallet with 12-word seed phrase
