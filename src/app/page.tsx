@@ -26,13 +26,12 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const timer = setTimeout(async () => {
+    const load = async () => {
       setIsLoading(true)
-      await new Promise((r) => setTimeout(r, 2500))
       await handleConnect('mock')
       setIsLoading(false)
-    }, 100)
-    return () => clearTimeout(timer)
+    }
+    load()
   }, [])
 
   const handleTabChange = (tab: string) => {
@@ -48,20 +47,19 @@ export default function Home() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: 16,
+      padding: 0,
     }}>
       <div style={{
         width: '100%',
         maxWidth: 448,
-        height: 710,
+        height: '100vh',
         background: '#0a0a0f',
-        borderRadius: 28,
-        border: '1px solid rgba(255,255,255,0.07)',
+        borderRadius: 0,
+        border: 'none',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
       }}>
 
         {/* Navbar */}
@@ -121,18 +119,6 @@ export default function Home() {
                   exit={{ opacity: 0, y: -12 }}
                   transition={{ duration: 0.22, ease: 'easeInOut' }}
                 >
-                  <div style={{ padding: '24px 20px 8px' }}>
-                    <p style={{
-                      fontSize: 18, fontWeight: 700, color: '#fff',
-                    }}>
-                      Transaction History
-                    </p>
-                    <p style={{
-                      fontSize: 12, color: '#6b7280', marginTop: 4,
-                    }}>
-                      All your recent activity
-                    </p>
-                  </div>
                   <TransactionHistory />
                 </motion.div>
               )}
@@ -146,18 +132,6 @@ export default function Home() {
                   exit={{ opacity: 0, y: -12 }}
                   transition={{ duration: 0.22, ease: 'easeInOut' }}
                 >
-                  <div style={{ padding: '24px 20px 8px' }}>
-                    <p style={{
-                      fontSize: 18, fontWeight: 700, color: '#fff',
-                    }}>
-                      Connect Wallet
-                    </p>
-                    <p style={{
-                      fontSize: 12, color: '#6b7280', marginTop: 4,
-                    }}>
-                      Link your existing wallet
-                    </p>
-                  </div>
                   <ConnectScreen />
                 </motion.div>
               )}
