@@ -29,9 +29,11 @@ export default function Home() {
   // Simulate initial load
   useEffect(() => {
     const timer = setTimeout(async () => {
+      setIsLoading(true)
+      await new Promise(resolve => setTimeout(resolve, 2500))
       await handleConnect('mock')
       setIsLoading(false)
-    }, 2000)
+    }, 100)
     return () => clearTimeout(timer)
   }, [])
 

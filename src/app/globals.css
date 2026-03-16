@@ -51,3 +51,9 @@ select option {
   background: #1e1e2a;
   color: #e8e6f0;
 }
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
