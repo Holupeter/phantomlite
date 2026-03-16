@@ -12,7 +12,7 @@ const tabs = [
   { id: 'send',    label: 'Send',    icon: '↑' },
   { id: 'receive', label: 'Receive', icon: '↓' },
   { id: 'history', label: 'History', icon: '≡' },
-  { id: 'connect', label: 'Connect', icon: '⬡' },
+  { id: 'connect', label: 'Connect', icon: '⇌' },
 ]
 
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {

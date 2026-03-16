@@ -24,7 +24,13 @@ const ASSET_COLORS: Record<string, { color: string; bg: string }> = {
 
 export function SendModal({ isOpen, onClose, defaultAsset = 'ETH' }: SendModalProps) {
   const { assets, network } = useWallet()
-  const { handleSend, formErrors, isSending, activeTransaction, setFormErrors } = useTransaction()
+  const {
+    handleSend,
+    formErrors,
+    isSending,
+    activeTransaction,
+    setFormErrors,
+  } = useTransaction()
 
   const [step, setStep] = useState<SendStep>('form')
   const [formData, setFormData] = useState<SendFormData>({
@@ -36,7 +42,9 @@ export function SendModal({ isOpen, onClose, defaultAsset = 'ETH' }: SendModalPr
 
   const selectedAsset = assets.find((a) => a.symbol === formData.asset)
   const amountNum = parseFloat(formData.amount) || 0
-  const pricePerUnit = selectedAsset ? selectedAsset.usdValue / selectedAsset.balance : 0
+  const pricePerUnit = selectedAsset
+    ? selectedAsset.usdValue / selectedAsset.balance
+    : 0
   const usdEstimate = amountNum * pricePerUnit
 
   const isFormValid =
@@ -66,10 +74,9 @@ export function SendModal({ isOpen, onClose, defaultAsset = 'ETH' }: SendModalPr
     onClose()
   }
 
-  const statusState =
-    !activeTransaction || activeTransaction.status === 'pending'
-      ? 'pending'
-      : activeTransaction.status
+  // Derive status purely from activeTransaction
+  const txStatus = activeTransaction?.status ?? 'pending'
+  const isResolved = txStatus === 'success' || txStatus === 'failed'
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Send Crypto">
@@ -258,7 +265,7 @@ export function SendModal({ isOpen, onClose, defaultAsset = 'ETH' }: SendModalPr
                 </div>
               )}
 
-              {/* Insufficient balance error */}
+              {/* Error */}
               {formErrors.amount && (
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 8,
@@ -416,99 +423,157 @@ export function SendModal({ isOpen, onClose, defaultAsset = 'ETH' }: SendModalPr
             transition={{ duration: 0.25 }}
             style={{
               display: 'flex', flexDirection: 'column',
-              alignItems: 'center', gap: 14,
+              alignItems: 'center', gap: 16,
               padding: '12px 0 8px', textAlign: 'center',
             }}
           >
 
             {/* Status icon */}
             <motion.div
-              animate={statusState === 'pending' ? { scale: [1, 1.06, 1] } : {}}
+              animate={txStatus === 'pending' ? { scale: [1, 1.06, 1] } : {}}
               transition={{ repeat: Infinity, duration: 1.8 }}
               style={{
-                width: 64, height: 64, borderRadius: '50%',
+                width: 72, height: 72, borderRadius: '50%',
                 display: 'flex', alignItems: 'center',
-                justifyContent: 'center', fontSize: 26,
+                justifyContent: 'center', fontSize: 30,
                 background:
-                  statusState === 'pending' ? 'rgba(251,191,36,0.12)' :
-                  statusState === 'success' ? 'rgba(52,211,153,0.12)' :
+                  txStatus === 'pending' ? 'rgba(251,191,36,0.12)' :
+                  txStatus === 'success' ? 'rgba(52,211,153,0.12)' :
                   'rgba(239,68,68,0.12)',
+                transition: 'background 0.4s',
               }}
             >
-              {statusState === 'pending' ? '⏳'
-                : statusState === 'success' ? '✓' : '✕'}
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={txStatus}
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {txStatus === 'pending' ? '⏳'
+                    : txStatus === 'success' ? '✓' : '✕'}
+                </motion.span>
+              </AnimatePresence>
             </motion.div>
 
             {/* Title */}
-            <div style={{ fontSize: 17, fontWeight: 600, color: '#fff' }}>
-              {statusState === 'pending' ? 'Broadcasting...'
-                : statusState === 'success' ? 'Transaction Confirmed'
-                : 'Transaction Failed'}
-            </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={txStatus + '-title'}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25 }}
+                style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}
+              >
+                {txStatus === 'pending' ? 'Broadcasting...'
+                  : txStatus === 'success' ? 'Transaction Confirmed'
+                  : 'Transaction Failed'}
+              </motion.div>
+            </AnimatePresence>
 
             {/* Description */}
-            <div style={{
-              fontSize: 12, color: '#6b7280',
-              lineHeight: 1.7, maxWidth: 260,
-            }}>
-              {statusState === 'pending'
-                ? 'Your transaction has been submitted to the network and is awaiting confirmation.'
-                : statusState === 'success'
-                ? 'Your funds have been sent successfully on the network.'
-                : 'This transaction failed due to insufficient gas or a network error. Your funds were not sent.'}
-            </div>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={txStatus + '-desc'}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                style={{
+                  fontSize: 12, color: '#6b7280',
+                  lineHeight: 1.7, maxWidth: 280,
+                }}
+              >
+                {txStatus === 'pending'
+                  ? 'Your transaction has been submitted to the network and is awaiting confirmation.'
+                  : txStatus === 'success'
+                  ? 'Your funds have been sent successfully on the network.'
+                  : 'This transaction failed due to insufficient gas or a network error. Your funds were not sent.'}
+              </motion.div>
+            </AnimatePresence>
 
             {/* Status badge */}
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '5px 12px', borderRadius: 20,
-              fontSize: 11, fontWeight: 500,
+              padding: '6px 14px', borderRadius: 20,
+              fontSize: 11, fontWeight: 600,
               background:
-                statusState === 'pending' ? 'rgba(251,191,36,0.1)' :
-                statusState === 'success' ? 'rgba(52,211,153,0.1)' :
+                txStatus === 'pending' ? 'rgba(251,191,36,0.1)' :
+                txStatus === 'success' ? 'rgba(52,211,153,0.1)' :
                 'rgba(239,68,68,0.1)',
               border:
-                statusState === 'pending' ? '0.5px solid rgba(251,191,36,0.2)' :
-                statusState === 'success' ? '0.5px solid rgba(52,211,153,0.2)' :
+                txStatus === 'pending' ? '0.5px solid rgba(251,191,36,0.2)' :
+                txStatus === 'success' ? '0.5px solid rgba(52,211,153,0.2)' :
                 '0.5px solid rgba(239,68,68,0.2)',
               color:
-                statusState === 'pending' ? '#fbbf24' :
-                statusState === 'success' ? '#34d399' :
+                txStatus === 'pending' ? '#fbbf24' :
+                txStatus === 'success' ? '#34d399' :
                 '#f87171',
+              transition: 'all 0.4s',
             }}>
               <span style={{
                 width: 6, height: 6, borderRadius: '50%',
                 background: 'currentColor', display: 'inline-block',
-                animation: statusState === 'pending' ? 'pulse 1.5s infinite' : 'none',
+                animation: txStatus === 'pending' ? 'pulse 1.5s infinite' : 'none',
               }} />
-              {statusState === 'pending' ? 'Pending'
-                : statusState === 'success' ? 'Confirmed' : 'Failed'}
+              {txStatus === 'pending' ? 'Pending'
+                : txStatus === 'success' ? 'Confirmed' : 'Failed'}
             </div>
+
+            {/* Transaction hash — only show when resolved */}
+            {isResolved && activeTransaction?.hash && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{
+                  width: '100%',
+                  padding: '10px 14px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '0.5px solid rgba(255,255,255,0.06)',
+                  borderRadius: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <span style={{ fontSize: 11, color: '#6b7280' }}>Tx hash</span>
+                <span style={{
+                  fontSize: 10, color: '#9ca3af',
+                  fontFamily: 'monospace',
+                }}>
+                  {activeTransaction.hash.slice(0, 10)}…{activeTransaction.hash.slice(-6)}
+                </span>
+              </motion.div>
+            )}
 
             {/* CTA button */}
             <button
               onClick={handleClose}
-              disabled={statusState === 'pending'}
+              disabled={txStatus === 'pending'}
               style={{
-                width: '100%', padding: 14, marginTop: 8,
+                width: '100%', padding: 14, marginTop: 4,
                 background:
-                  statusState === 'failed'
-                    ? 'rgba(239,68,68,0.1)'
-                    : 'rgba(255,255,255,0.05)',
+                  txStatus === 'pending' ? 'rgba(255,255,255,0.04)' :
+                  txStatus === 'failed'  ? 'rgba(239,68,68,0.1)' :
+                  'rgba(52,211,153,0.1)',
                 border:
-                  statusState === 'failed'
-                    ? '0.5px solid rgba(239,68,68,0.2)'
-                    : '0.5px solid rgba(255,255,255,0.1)',
+                  txStatus === 'pending' ? '0.5px solid rgba(255,255,255,0.08)' :
+                  txStatus === 'failed'  ? '0.5px solid rgba(239,68,68,0.2)' :
+                  '0.5px solid rgba(52,211,153,0.2)',
                 borderRadius: 12, fontSize: 14, fontWeight: 600,
-                color: statusState === 'failed' ? '#f87171' : '#fff',
-                cursor: statusState === 'pending' ? 'not-allowed' : 'pointer',
-                opacity: statusState === 'pending' ? 0.5 : 1,
+                color:
+                  txStatus === 'pending' ? '#6b7280' :
+                  txStatus === 'failed'  ? '#f87171' : '#34d399',
+                cursor: txStatus === 'pending' ? 'not-allowed' : 'pointer',
+                opacity: txStatus === 'pending' ? 0.5 : 1,
                 display: 'flex', alignItems: 'center',
                 justifyContent: 'center', gap: 8,
-                transition: 'opacity 0.2s',
+                transition: 'all 0.4s',
               }}
             >
-              {statusState === 'pending' ? (
+              {txStatus === 'pending' ? (
                 <>
                   <span style={{
                     width: 14, height: 14,
@@ -519,7 +584,7 @@ export function SendModal({ isOpen, onClose, defaultAsset = 'ETH' }: SendModalPr
                   }} />
                   Processing...
                 </>
-              ) : 'Done'}
+              ) : txStatus === 'success' ? '✓ Done' : 'Close'}
             </button>
 
           </motion.div>

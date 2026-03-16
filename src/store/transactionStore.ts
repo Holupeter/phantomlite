@@ -5,7 +5,6 @@ import { MOCK_TRANSACTIONS } from '@/lib/mockData'
 import { generateTxId, generateMockHash } from '@/lib/utils'
 
 interface TransactionStore extends TransactionState {
-  // Actions
   sendTransaction: (formData: SendFormData, balances: Record<string, number>) => Promise<void>
   retryTransaction: (txId: string) => Promise<void>
   setActiveTransaction: (tx: Transaction | null) => void
@@ -16,25 +15,26 @@ interface TransactionStore extends TransactionState {
 export const useTransactionStore = create<TransactionStore>()(
   devtools(
     (set, get) => ({
-      // ── Initial State ──────────────────────────
       transactions: MOCK_TRANSACTIONS,
       queue: [],
       activeTransaction: null,
 
-      // ── Actions ────────────────────────────────
       sendTransaction: async (formData, balances) => {
         const { to, amount, asset, network } = formData
         const numAmount = parseFloat(amount)
         const balance = balances[asset] ?? 0
 
-        // Create the transaction object
         const newTx: Transaction = {
           id: generateTxId(),
           type: 'send',
           status: 'pending',
           asset,
           amount: numAmount,
-          usdValue: numAmount * (asset === 'ETH' ? 2706 : asset === 'SOL' ? 130.5 : 1),
+          usdValue: numAmount * (
+            asset === 'ETH'  ? 2706 :
+            asset === 'SOL'  ? 130.5 :
+            asset === 'MATIC'? 0.70 : 1
+          ),
           from: '0x3f7a8c4d2e1b9f6a5c0d8e3f7a8c4d2e1b9f6a5c2d9',
           to,
           hash: generateMockHash(),
@@ -45,25 +45,34 @@ export const useTransactionStore = create<TransactionStore>()(
           retryCount: 0,
         }
 
-        // Optimistic UI — add as pending immediately
+        // Step 1 — add as pending immediately (optimistic UI)
         set((state) => ({
           transactions: [newTx, ...state.transactions],
           queue: [...state.queue, newTx],
-          activeTransaction: newTx,
+          activeTransaction: { ...newTx, status: 'pending' },
         }))
 
-        // Simulate network delay
+        // Step 2 — simulate network delay
         await new Promise((resolve) => setTimeout(resolve, 3000))
 
-        // Simulate success or failure (80% success rate)
-        const success = balance >= numAmount && Math.random() > 0.2
+        // Step 3 — determine outcome
+        const hasBalance = balance >= numAmount
+        const randomSuccess = Math.random() > 0.2
+        const success = hasBalance && randomSuccess
         const finalStatus: TransactionStatus = success ? 'success' : 'failed'
 
+        // Step 4 — update transaction list
         set((state) => ({
           transactions: state.transactions.map((tx) =>
-            tx.id === newTx.id ? { ...tx, status: finalStatus } : tx
+            tx.id === newTx.id
+              ? { ...tx, status: finalStatus }
+              : tx
           ),
           queue: state.queue.filter((tx) => tx.id !== newTx.id),
+        }))
+
+        // Step 5 — update activeTransaction separately so modal reacts
+        set(() => ({
           activeTransaction: { ...newTx, status: finalStatus },
         }))
       },
@@ -72,29 +81,24 @@ export const useTransactionStore = create<TransactionStore>()(
         const tx = get().transactions.find((t) => t.id === txId)
         if (!tx || tx.status !== 'failed') return
 
-        // Increment retry count and reset to pending
+        const updatedTx = { ...tx, status: 'pending' as TransactionStatus, retryCount: tx.retryCount + 1 }
+
         set((state) => ({
           transactions: state.transactions.map((t) =>
-            t.id === txId
-              ? { ...t, status: 'pending', retryCount: t.retryCount + 1 }
-              : t
+            t.id === txId ? updatedTx : t
           ),
-          activeTransaction: tx ? { ...tx, status: 'pending', retryCount: tx.retryCount + 1 } : null,
+          activeTransaction: updatedTx,
         }))
 
         await new Promise((resolve) => setTimeout(resolve, 3000))
 
-        // Higher success rate on retry
-        const success = Math.random() > 0.1
-        const finalStatus: TransactionStatus = success ? 'success' : 'failed'
+        const finalStatus: TransactionStatus = Math.random() > 0.1 ? 'success' : 'failed'
 
         set((state) => ({
           transactions: state.transactions.map((t) =>
             t.id === txId ? { ...t, status: finalStatus } : t
           ),
-          activeTransaction: state.activeTransaction
-            ? { ...state.activeTransaction, status: finalStatus }
-            : null,
+          activeTransaction: { ...updatedTx, status: finalStatus },
         }))
       },
 

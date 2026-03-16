@@ -10,22 +10,19 @@ interface SendFormErrors {
 }
 
 export function useTransaction() {
-  const {
-    transactions,
-    queue,
-    activeTransaction,
-    sendTransaction,
-    retryTransaction,
-    setActiveTransaction,
-    clearQueue,
-  } = useTransactionStore()
+  const transactions = useTransactionStore((state) => state.transactions)
+  const queue = useTransactionStore((state) => state.queue)
+  const activeTransaction = useTransactionStore((state) => state.activeTransaction)
+  const sendTransaction = useTransactionStore((state) => state.sendTransaction)
+  const retryTransaction = useTransactionStore((state) => state.retryTransaction)
+  const setActiveTransaction = useTransactionStore((state) => state.setActiveTransaction)
+  const clearQueue = useTransactionStore((state) => state.clearQueue)
 
-  const { assets } = useWalletStore()
+  const assets = useWalletStore((state) => state.assets)
 
   const [formErrors, setFormErrors] = useState<SendFormErrors>({})
   const [isSending, setIsSending] = useState(false)
 
-  // Form validation
   const validateForm = (formData: SendFormData): boolean => {
     const errors: SendFormErrors = {}
     const asset = assets.find((a) => a.symbol === formData.asset)
@@ -48,10 +45,7 @@ export function useTransaction() {
     return Object.keys(errors).length === 0
   }
 
-  // Send handler
   const handleSend = async (formData: SendFormData) => {
-    if (!validateForm(formData)) return
-
     const balanceMap = assets.reduce((acc, a) => {
       acc[a.symbol] = a.balance
       return acc
@@ -65,7 +59,6 @@ export function useTransaction() {
     }
   }
 
-  // Retry handler
   const handleRetry = async (txId: string) => {
     setIsSending(true)
     try {
@@ -75,7 +68,6 @@ export function useTransaction() {
     }
   }
 
-  // Filtered views
   const getTransactionsByStatus = (status: TransactionStatus) => {
     return transactions.filter((tx) => tx.status === status)
   }
@@ -89,7 +81,6 @@ export function useTransaction() {
   const successTransactions = transactions.filter((tx) => tx.status === 'success')
 
   return {
-    // State
     transactions,
     queue,
     activeTransaction,
@@ -98,12 +89,8 @@ export function useTransaction() {
     pendingTransactions,
     failedTransactions,
     successTransactions,
-
-    // Helpers
     getTransactionsByStatus,
     getTransactionsByAsset,
-
-    // Actions
     handleSend,
     handleRetry,
     setActiveTransaction,
