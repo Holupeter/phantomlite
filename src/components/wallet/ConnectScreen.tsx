@@ -3,8 +3,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useWallet } from '@/hooks/useWallet'
-import { Button } from '@/components/ui/Button'
-import { Check, Wifi, WifiOff } from 'lucide-react'
 
 const WALLET_OPTIONS = [
   {
@@ -12,127 +10,226 @@ const WALLET_OPTIONS = [
     name: 'MetaMask',
     description: 'Browser extension wallet',
     emoji: '🦊',
-    color: '#f6851b',
+    bg: 'rgba(246,133,27,0.1)',
+    border: 'rgba(246,133,27,0.2)',
   },
   {
     id: 'walletconnect' as const,
     name: 'WalletConnect',
     description: 'Scan QR with mobile wallet',
     emoji: '⬡',
-    color: '#3b99fc',
+    bg: 'rgba(59,153,252,0.1)',
+    border: 'rgba(59,153,252,0.2)',
   },
   {
     id: 'phantom' as const,
     name: 'Phantom',
     description: 'Solana & multi-chain wallet',
     emoji: '👻',
-    color: '#9945ff',
+    bg: 'rgba(153,69,255,0.1)',
+    border: 'rgba(153,69,255,0.2)',
+  },
+  {
+    id: 'mock' as const,
+    name: 'Coinbase Wallet',
+    description: 'Self-custody wallet',
+    emoji: '🔵',
+    bg: 'rgba(22,82,240,0.1)',
+    border: 'rgba(22,82,240,0.2)',
   },
   {
     id: 'mock' as const,
     name: 'Demo Wallet',
     description: 'Connect with mock data',
     emoji: '🔮',
-    color: '#6c5dff',
+    bg: 'rgba(108,93,255,0.1)',
+    border: 'rgba(108,93,255,0.2)',
   },
 ]
 
 export function ConnectScreen() {
-  const { handleConnect, handleDisconnect, isConnected, isConnecting, connectedProvider, address } = useWallet()
-  const [connectingId, setConnectingId] = useState<string | null>(null)
-  const [justConnected, setJustConnected] = useState<string | null>(null)
+  const {
+    handleConnect,
+    handleDisconnect,
+    isConnected,
+    isConnecting,
+    connectedProvider,
+    address,
+  } = useWallet()
 
-  const handleWalletConnect = async (id: typeof WALLET_OPTIONS[number]['id']) => {
-    setConnectingId(id)
+  const [connectingIndex, setConnectingIndex] = useState<number | null>(null)
+  const [justConnectedIndex, setJustConnectedIndex] = useState<number | null>(null)
+
+  const handleWalletClick = async (
+    id: typeof WALLET_OPTIONS[number]['id'],
+    index: number
+  ) => {
+    if (connectingIndex !== null) return
+    setConnectingIndex(index)
     await handleConnect(id)
-    setConnectingId(null)
-    setJustConnected(id)
-    setTimeout(() => setJustConnected(null), 2000)
+    setConnectingIndex(null)
+    setJustConnectedIndex(index)
+    setTimeout(() => setJustConnectedIndex(null), 2000)
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="flex flex-col gap-4 p-5"
-    >
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
 
-      {/* Connected state banner */}
-      <AnimatePresence>
-        {isConnected && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            className="flex items-center justify-between p-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl"
-          >
-            <div className="flex items-center gap-2.5">
-              <Wifi size={14} className="text-emerald-400" />
-              <div>
-                <p className="text-xs font-semibold text-emerald-400">Wallet Connected</p>
-                <p className="text-[10px] text-emerald-600 font-mono mt-0.5">
-                  {address?.slice(0, 6)}...{address?.slice(-4)}
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDisconnect}
-              className="text-red-400 hover:text-red-300 hover:bg-red-500/10 text-[11px]"
-            >
-              Disconnect
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Section label */}
-      <div>
-        <p className="text-[11px] uppercase tracking-widest text-gray-500 font-medium mb-1">
-          {isConnected ? 'Switch Wallet' : 'Choose Wallet'}
-        </p>
-        <p className="text-xs text-gray-600">
-          {isConnected
-            ? 'Connect a different wallet provider'
-            : 'Select a provider to connect your wallet'}
-        </p>
+      {/* Page header */}
+      <div style={{
+        padding: '24px 20px 16px',
+        borderBottom: '0.5px solid rgba(255,255,255,0.05)',
+      }}>
+        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>
+          Connect Wallet
+        </div>
+        <div style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+          Link your existing wallet to PhantomLite
+        </div>
       </div>
 
-      {/* Wallet options */}
-      <div className="flex flex-col gap-2">
+      {/* Body */}
+      <div style={{
+        padding: '20px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+      }}>
+
+        {/* Connected banner */}
+        <AnimatePresence>
+          {isConnected && address && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px 16px',
+                background: 'rgba(52,211,153,0.08)',
+                border: '0.5px solid rgba(52,211,153,0.2)',
+                borderRadius: 14,
+              }}
+            >
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}>
+                <div style={{
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: '#34d399', flexShrink: 0,
+                  animation: 'pulse 2s infinite',
+                }} />
+                <div>
+                  <div style={{
+                    fontSize: 12, fontWeight: 600, color: '#34d399',
+                  }}>
+                    {connectedProvider === 'metamask' ? 'MetaMask'
+                      : connectedProvider === 'walletconnect' ? 'WalletConnect'
+                      : connectedProvider === 'phantom' ? 'Phantom'
+                      : 'Demo Wallet'} Connected
+                  </div>
+                  <div style={{
+                    fontSize: 10, color: 'rgba(52,211,153,0.6)',
+                    fontFamily: 'monospace', marginTop: 2,
+                  }}>
+                    {address.slice(0, 6)}…{address.slice(-4)}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={handleDisconnect}
+                style={{
+                  padding: '6px 12px', borderRadius: 8,
+                  background: 'rgba(239,68,68,0.1)',
+                  border: '0.5px solid rgba(239,68,68,0.2)',
+                  fontSize: 11, fontWeight: 500,
+                  color: '#f87171', cursor: 'pointer',
+                }}
+              >
+                Disconnect
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Section label */}
+        <div style={{
+          fontSize: 10, letterSpacing: 1.5,
+          textTransform: 'uppercase', color: '#6b7280',
+          fontWeight: 500,
+        }}>
+          {isConnected ? 'Switch Wallet' : 'Choose Provider'}
+        </div>
+
+        {/* Wallet options */}
         {WALLET_OPTIONS.map((wallet, i) => {
-          const isThisConnecting = connectingId === wallet.id
-          const isThisConnected = isConnected && connectedProvider === wallet.id
-          const justDone = justConnected === wallet.id
+          const isThisConnecting = connectingIndex === i
+          const isThisConnected = justConnectedIndex === i
 
           return (
             <motion.button
-              key={wallet.id}
+              key={`${wallet.id}-${i}`}
               initial={{ opacity: 0, x: -12 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.07 }}
+              transition={{ delay: i * 0.06 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => !isThisConnecting && handleWalletConnect(wallet.id)}
+              onClick={() => handleWalletClick(wallet.id, i)}
               disabled={isThisConnecting || isConnecting}
-              className="flex items-center gap-3.5 p-4 bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.07] hover:border-white/20 rounded-2xl transition-all text-left disabled:opacity-60"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                padding: 16,
+                background: 'rgba(255,255,255,0.03)',
+                border: '0.5px solid rgba(255,255,255,0.07)',
+                borderRadius: 16,
+                cursor: isThisConnecting ? 'not-allowed' : 'pointer',
+                textAlign: 'left',
+                opacity: connectingIndex !== null && connectingIndex !== i ? 0.5 : 1,
+                transition: 'border-color 0.2s, background 0.2s, opacity 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                if (connectingIndex === null) {
+                  e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.06)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'
+                e.currentTarget.style.background = 'rgba(255,255,255,0.03)'
+              }}
             >
               {/* Logo */}
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                style={{ backgroundColor: `${wallet.color}18` }}
-              >
+              <div style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: wallet.bg,
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'center', fontSize: 22,
+                flexShrink: 0,
+              }}>
                 {wallet.emoji}
               </div>
 
               {/* Info */}
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white">{wallet.name}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{wallet.description}</p>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                  fontSize: 14, fontWeight: 500, color: '#fff',
+                }}>
+                  {wallet.name}
+                </div>
+                <div style={{
+                  fontSize: 11, color: '#6b7280', marginTop: 2,
+                }}>
+                  {wallet.description}
+                </div>
               </div>
 
               {/* State indicator */}
-              <div className="flex-shrink-0">
+              <div style={{ flexShrink: 0 }}>
                 <AnimatePresence mode="wait">
                   {isThisConnecting ? (
                     <motion.div
@@ -140,40 +237,60 @@ export function ConnectScreen() {
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
-                      className="w-5 h-5 border-2 border-violet-400 border-t-transparent rounded-full animate-spin"
+                      style={{
+                        width: 20, height: 20,
+                        border: '2px solid rgba(255,255,255,0.15)',
+                        borderTopColor: '#a78bfa',
+                        borderRadius: '50%',
+                        animation: 'spin 0.8s linear infinite',
+                      }}
                     />
-                  ) : isThisConnected || justDone ? (
+                  ) : isThisConnected ? (
                     <motion.div
                       key="check"
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center"
+                      exit={{ scale: 0 }}
+                      style={{
+                        width: 20, height: 20, borderRadius: '50%',
+                        background: 'rgba(52,211,153,0.15)',
+                        display: 'flex', alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 11, color: '#34d399',
+                      }}
                     >
-                      <Check size={11} className="text-emerald-400" />
+                      ✓
                     </motion.div>
                   ) : (
                     <motion.span
                       key="arrow"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="text-gray-600 text-sm"
+                      style={{
+                        fontSize: 18, color: '#374151',
+                      }}
                     >
                       ›
                     </motion.span>
                   )}
                 </AnimatePresence>
               </div>
+
             </motion.button>
           )
         })}
+
+        {/* Footer note */}
+        <div style={{
+          textAlign: 'center',
+          fontSize: 11, color: '#4b5563',
+          lineHeight: 1.7, paddingTop: 8,
+        }}>
+          PhantomLite never stores your private keys.<br />
+          All connections are non-custodial.
+        </div>
+
       </div>
-
-      {/* Footer note */}
-      <p className="text-[11px] text-gray-600 text-center leading-relaxed pt-1">
-        PhantomLite never stores your private keys.<br />
-        All connections are non-custodial.
-      </p>
-
-    </motion.div>
+    </div>
   )
 }

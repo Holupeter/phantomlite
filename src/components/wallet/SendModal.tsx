@@ -3,20 +3,9 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Modal } from '@/components/ui/Modal'
-import { Button } from '@/components/ui/Button'
-import { StatusBadge } from '@/components/ui/StatusBadge'
 import { useTransaction } from '@/hooks/useTransaction'
 import { useWallet } from '@/hooks/useWallet'
 import { SendFormData, AssetSymbol } from '@/types'
-import { formatUsd, formatCrypto, shortenAddress } from '@/lib/utils'
-import { AlertCircle, ChevronDown, ArrowRight } from 'lucide-react'
-
-const ASSET_ICONS: Record<string, string> = {
-  ETH: 'Ξ',
-  SOL: '◎',
-  USDC: '$',
-  MATIC: '⬡',
-}
 
 type SendStep = 'form' | 'review' | 'status'
 
@@ -24,6 +13,13 @@ interface SendModalProps {
   isOpen: boolean
   onClose: () => void
   defaultAsset?: AssetSymbol
+}
+
+const ASSET_COLORS: Record<string, { color: string; bg: string }> = {
+  ETH:   { color: '#627eea', bg: 'rgba(98,126,234,0.15)' },
+  SOL:   { color: '#9945ff', bg: 'rgba(153,69,255,0.15)' },
+  USDC:  { color: '#2775ca', bg: 'rgba(39,117,202,0.15)' },
+  MATIC: { color: '#8247e5', bg: 'rgba(130,71,229,0.15)' },
 }
 
 export function SendModal({ isOpen, onClose, defaultAsset = 'ETH' }: SendModalProps) {
@@ -40,7 +36,13 @@ export function SendModal({ isOpen, onClose, defaultAsset = 'ETH' }: SendModalPr
 
   const selectedAsset = assets.find((a) => a.symbol === formData.asset)
   const amountNum = parseFloat(formData.amount) || 0
-  const usdEstimate = amountNum * (selectedAsset ? selectedAsset.usdValue / selectedAsset.balance : 0)
+  const pricePerUnit = selectedAsset ? selectedAsset.usdValue / selectedAsset.balance : 0
+  const usdEstimate = amountNum * pricePerUnit
+
+  const isFormValid =
+    formData.to.length > 5 &&
+    amountNum > 0 &&
+    amountNum <= (selectedAsset?.balance ?? 0)
 
   const handleFieldChange = (field: keyof SendFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -50,10 +52,6 @@ export function SendModal({ isOpen, onClose, defaultAsset = 'ETH' }: SendModalPr
   const handleSetMax = () => {
     if (!selectedAsset) return
     handleFieldChange('amount', selectedAsset.balance.toString())
-  }
-
-  const handleReview = () => {
-    setStep('review')
   }
 
   const handleConfirm = async () => {
@@ -68,266 +66,462 @@ export function SendModal({ isOpen, onClose, defaultAsset = 'ETH' }: SendModalPr
     onClose()
   }
 
+  const statusState =
+    !activeTransaction || activeTransaction.status === 'pending'
+      ? 'pending'
+      : activeTransaction.status
+
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Send Crypto">
-
       <AnimatePresence mode="wait">
 
-        {/* STEP 1: Form */}
+        {/* ── STEP 1: Form ── */}
         {step === 'form' && (
           <motion.div
             key="form"
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 24 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
+            exit={{ opacity: 0, x: -24 }}
             transition={{ duration: 0.2 }}
-            className="flex flex-col gap-4"
+            style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
           >
+
             {/* Asset selector */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] uppercase tracking-wider text-gray-500 font-medium">
+            <div>
+              <div style={{
+                fontSize: 10, letterSpacing: 1.5,
+                textTransform: 'uppercase', color: '#6b7280',
+                fontWeight: 500, marginBottom: 6,
+              }}>
                 Asset
-              </label>
-              <div className="relative">
-                <select
-                  value={formData.asset}
-                  onChange={(e) => handleFieldChange('asset', e.target.value)}
-                  className="w-full appearance-none bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-violet-500/50 transition-colors cursor-pointer"
-                >
-                  {assets.map((a) => (
-                    <option key={a.symbol} value={a.symbol} className="bg-[#1e1e2a]">
-                      {a.name} ({a.symbol}) — {formatCrypto(a.balance, a.symbol)}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown
-                  size={14}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-                />
               </div>
+              <select
+                value={formData.asset}
+                onChange={(e) => handleFieldChange('asset', e.target.value)}
+                style={{
+                  width: '100%',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '0.5px solid rgba(255,255,255,0.1)',
+                  borderRadius: 12,
+                  padding: '12px 14px',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: '#fff',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  appearance: 'none',
+                  WebkitAppearance: 'none',
+                }}
+              >
+                {assets.map((a) => (
+                  <option
+                    key={a.symbol}
+                    value={a.symbol}
+                    style={{ background: '#1e1e2a', color: '#fff' }}
+                  >
+                    {a.name} ({a.symbol}) — {a.balance.toFixed(4)} {a.symbol}
+                  </option>
+                ))}
+              </select>
+              {selectedAsset && (
+                <div style={{
+                  fontSize: 11, color: '#6b7280',
+                  marginTop: 5, paddingLeft: 2,
+                }}>
+                  Available: {selectedAsset.balance.toFixed(4)} {selectedAsset.symbol}
+                </div>
+              )}
             </div>
 
-            {/* Recipient */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[11px] uppercase tracking-wider text-gray-500 font-medium">
+            {/* Recipient address */}
+            <div>
+              <div style={{
+                fontSize: 10, letterSpacing: 1.5,
+                textTransform: 'uppercase', color: '#6b7280',
+                fontWeight: 500, marginBottom: 6,
+              }}>
                 Recipient Address
-              </label>
+              </div>
               <input
                 type="text"
                 placeholder="0x... or ENS name"
                 value={formData.to}
                 onChange={(e) => handleFieldChange('to', e.target.value)}
-                className={`w-full bg-white/[0.04] border rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none transition-colors font-mono ${
-                  formErrors.to
-                    ? 'border-red-500/50 focus:border-red-500'
-                    : 'border-white/10 focus:border-violet-500/50'
-                }`}
+                style={{
+                  width: '100%',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: `0.5px solid ${formErrors.to
+                    ? 'rgba(239,68,68,0.5)'
+                    : 'rgba(255,255,255,0.1)'}`,
+                  borderRadius: 12,
+                  padding: '12px 14px',
+                  fontSize: 12,
+                  color: '#fff',
+                  fontFamily: 'monospace',
+                  outline: 'none',
+                  boxSizing: 'border-box',
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = 'rgba(124,58,237,0.6)'
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = formErrors.to
+                    ? 'rgba(239,68,68,0.5)'
+                    : 'rgba(255,255,255,0.1)'
+                }}
               />
               {formErrors.to && (
-                <motion.div
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-1.5 text-xs text-red-400"
-                >
-                  <AlertCircle size={11} />
-                  {formErrors.to}
-                </motion.div>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  fontSize: 11, color: '#f87171', marginTop: 5,
+                }}>
+                  ⚠ {formErrors.to}
+                </div>
               )}
             </div>
 
             {/* Amount */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-[11px] uppercase tracking-wider text-gray-500 font-medium">
+            <div>
+              <div style={{
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'space-between', marginBottom: 6,
+              }}>
+                <div style={{
+                  fontSize: 10, letterSpacing: 1.5,
+                  textTransform: 'uppercase', color: '#6b7280', fontWeight: 500,
+                }}>
                   Amount
-                </label>
-                <span className="text-[11px] text-gray-500">
-                  Balance: {selectedAsset ? formatCrypto(selectedAsset.balance, selectedAsset.symbol) : '—'}
-                </span>
+                </div>
+                <div style={{ fontSize: 11, color: '#6b7280' }}>
+                  Max: {selectedAsset?.balance.toFixed(4)} {formData.asset}
+                </div>
               </div>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ flex: 1, position: 'relative' }}>
                   <input
                     type="number"
                     placeholder="0.00"
                     value={formData.amount}
                     onChange={(e) => handleFieldChange('amount', e.target.value)}
-                    className={`w-full bg-white/[0.04] border rounded-xl px-4 py-3 pr-16 text-sm text-white placeholder-gray-600 focus:outline-none transition-colors ${
-                      formErrors.amount
-                        ? 'border-red-500/50 focus:border-red-500'
-                        : 'border-white/10 focus:border-violet-500/50'
-                    }`}
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255,255,255,0.04)',
+                      border: `0.5px solid ${formErrors.amount
+                        ? 'rgba(239,68,68,0.5)'
+                        : 'rgba(255,255,255,0.1)'}`,
+                      borderRadius: 12,
+                      padding: '12px 50px 12px 14px',
+                      fontSize: 13,
+                      color: '#fff',
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                    }}
+                    onFocus={(e) => {
+                      e.target.style.borderColor = 'rgba(124,58,237,0.6)'
+                    }}
+                    onBlur={(e) => {
+                      e.target.style.borderColor = formErrors.amount
+                        ? 'rgba(239,68,68,0.5)'
+                        : 'rgba(255,255,255,0.1)'
+                    }}
                   />
-                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-mono">
+                  <span style={{
+                    position: 'absolute', right: 12,
+                    top: '50%', transform: 'translateY(-50%)',
+                    fontSize: 11, color: '#6b7280',
+                    fontFamily: 'monospace', pointerEvents: 'none',
+                  }}>
                     {formData.asset}
                   </span>
                 </div>
                 <button
                   onClick={handleSetMax}
-                  className="px-3.5 py-2 rounded-xl bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-semibold hover:bg-violet-500/20 transition-colors"
+                  style={{
+                    padding: '10px 14px', borderRadius: 10,
+                    background: 'rgba(124,58,237,0.12)',
+                    border: '0.5px solid rgba(124,58,237,0.25)',
+                    fontSize: 11, fontWeight: 600, color: '#a78bfa',
+                    cursor: 'pointer', whiteSpace: 'nowrap',
+                  }}
                 >
                   MAX
                 </button>
               </div>
 
               {/* USD estimate */}
-              {amountNum > 0 && (
-                <motion.span
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-xs text-gray-500"
-                >
-                  ≈ {formatUsd(usdEstimate)}
-                </motion.span>
+              {amountNum > 0 && !formErrors.amount && (
+                <div style={{
+                  fontSize: 11, color: '#6b7280',
+                  marginTop: 5, paddingLeft: 2,
+                }}>
+                  ≈ ${usdEstimate.toFixed(2)} USD
+                </div>
               )}
 
+              {/* Insufficient balance error */}
               {formErrors.amount && (
-                <motion.div
-                  initial={{ opacity: 0, y: -4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-1.5 text-xs text-red-400"
-                >
-                  <AlertCircle size={11} />
-                  {formErrors.amount}
-                </motion.div>
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '10px 14px', borderRadius: 10, marginTop: 8,
+                  background: 'rgba(239,68,68,0.08)',
+                  border: '0.5px solid rgba(239,68,68,0.2)',
+                  fontSize: 12, color: '#f87171',
+                }}>
+                  ⚠ {formErrors.amount}
+                </div>
               )}
             </div>
 
-            {/* Gas fee estimate */}
-            <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-              <span className="text-xs text-gray-500">Estimated gas fee</span>
-              <span className="text-xs font-medium text-gray-300 font-mono">
+            {/* Gas fee */}
+            <div style={{
+              display: 'flex', alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 14px',
+              background: 'rgba(255,255,255,0.03)',
+              border: '0.5px solid rgba(255,255,255,0.06)',
+              borderRadius: 10, fontSize: 12,
+            }}>
+              <span style={{ color: '#6b7280' }}>Estimated gas fee</span>
+              <span style={{
+                color: '#d1d5db',
+                fontFamily: 'monospace', fontSize: 11,
+              }}>
                 ~$2.40 (0.00089 ETH)
               </span>
             </div>
 
-            <Button
-              fullWidth
-              onClick={handleReview}
-              disabled={!formData.to || !formData.amount}
-              className="mt-1"
+            {/* CTA */}
+            <button
+              onClick={() => isFormValid && setStep('review')}
+              disabled={!isFormValid}
+              style={{
+                width: '100%', padding: 14,
+                background: isFormValid
+                  ? '#7c3aed'
+                  : 'rgba(124,58,237,0.3)',
+                border: 'none', borderRadius: 12,
+                fontSize: 14, fontWeight: 600, color: '#fff',
+                cursor: isFormValid ? 'pointer' : 'not-allowed',
+                opacity: isFormValid ? 1 : 0.5,
+                transition: 'opacity 0.2s, background 0.2s',
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'center', gap: 8,
+              }}
             >
-              Review Transaction
-              <ArrowRight size={15} />
-            </Button>
+              Review Transaction →
+            </button>
+
           </motion.div>
         )}
 
-        {/* STEP 2: Review */}
+        {/* ── STEP 2: Review ── */}
         {step === 'review' && (
           <motion.div
             key="review"
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 0, x: 24 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
+            exit={{ opacity: 0, x: -24 }}
             transition={{ duration: 0.2 }}
-            className="flex flex-col gap-4"
+            style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
           >
-            <div className="flex flex-col gap-2 bg-white/[0.03] border border-white/[0.07] rounded-2xl overflow-hidden">
+
+            {/* Review card */}
+            <div style={{
+              background: 'rgba(255,255,255,0.03)',
+              border: '0.5px solid rgba(255,255,255,0.07)',
+              borderRadius: 14, overflow: 'hidden',
+            }}>
               {[
-                { label: 'From', value: shortenAddress('0x3f7a8c4d2e1b9f6a5c0d8e3f7a8c4d2e1b9f6a5c2d9', 6) },
-                { label: 'To', value: shortenAddress(formData.to, 6) },
-                { label: 'Amount', value: formatCrypto(amountNum, formData.asset) },
-                { label: 'USD Value', value: `≈ ${formatUsd(usdEstimate)}` },
-                { label: 'Network', value: network.charAt(0).toUpperCase() + network.slice(1) },
-                { label: 'Gas fee', value: '~$2.40' },
-              ].map((row) => (
+                { label: 'From',      value: '0x3f7a…5c2d9' },
+                { label: 'To',        value: `${formData.to.slice(0, 6)}…${formData.to.slice(-4)}` },
+                { label: 'Amount',    value: `${amountNum.toFixed(4)} ${formData.asset}` },
+                { label: 'USD Value', value: `≈ $${usdEstimate.toFixed(2)}` },
+                { label: 'Network',   value: network.charAt(0).toUpperCase() + network.slice(1) },
+                { label: 'Gas fee',   value: '~$2.40' },
+              ].map((row, i, arr) => (
                 <div
                   key={row.label}
-                  className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.05] last:border-0"
+                  style={{
+                    display: 'flex', alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '12px 16px',
+                    borderBottom: i < arr.length - 1
+                      ? '0.5px solid rgba(255,255,255,0.05)'
+                      : 'none',
+                    fontSize: 12,
+                  }}
                 >
-                  <span className="text-xs text-gray-500">{row.label}</span>
-                  <span className="text-xs font-medium text-white font-mono">{row.value}</span>
+                  <span style={{ color: '#6b7280' }}>{row.label}</span>
+                  <span style={{
+                    color: '#fff',
+                    fontFamily: 'monospace', fontSize: 11,
+                  }}>
+                    {row.value}
+                  </span>
                 </div>
               ))}
             </div>
 
-            <div className="flex gap-2 mt-1">
-              <Button
-                variant="secondary"
-                fullWidth
+            {/* Buttons */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
                 onClick={() => setStep('form')}
+                style={{
+                  flex: 1, padding: 14,
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '0.5px solid rgba(255,255,255,0.1)',
+                  borderRadius: 12, fontSize: 13,
+                  fontWeight: 600, color: '#fff', cursor: 'pointer',
+                }}
               >
-                Back
-              </Button>
-              <Button
-                fullWidth
+                ← Back
+              </button>
+              <button
                 onClick={handleConfirm}
-                loading={isSending}
+                disabled={isSending}
+                style={{
+                  flex: 1, padding: 14,
+                  background: '#7c3aed', border: 'none',
+                  borderRadius: 12, fontSize: 13,
+                  fontWeight: 600, color: '#fff', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center',
+                  justifyContent: 'center', gap: 8,
+                  opacity: isSending ? 0.7 : 1,
+                }}
               >
-                Confirm Send
-              </Button>
+                {isSending ? (
+                  <>
+                    <span style={{
+                      width: 14, height: 14,
+                      border: '2px solid rgba(255,255,255,0.3)',
+                      borderTopColor: '#fff', borderRadius: '50%',
+                      display: 'inline-block',
+                      animation: 'spin 0.8s linear infinite',
+                    }} />
+                    Sending...
+                  </>
+                ) : 'Confirm Send'}
+              </button>
             </div>
+
           </motion.div>
         )}
 
-        {/* STEP 3: Status */}
+        {/* ── STEP 3: Status ── */}
         {step === 'status' && (
           <motion.div
             key="status"
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3 }}
-            className="flex flex-col items-center gap-4 py-4"
+            transition={{ duration: 0.25 }}
+            style={{
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', gap: 14,
+              padding: '12px 0 8px', textAlign: 'center',
+            }}
           >
+
             {/* Status icon */}
             <motion.div
-              animate={
-                !activeTransaction || activeTransaction.status === 'pending'
-                  ? { scale: [1, 1.05, 1] }
-                  : {}
-              }
-              transition={{ repeat: Infinity, duration: 1.5 }}
-              className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl ${
-                !activeTransaction || activeTransaction.status === 'pending'
-                  ? 'bg-amber-400/10'
-                  : activeTransaction.status === 'success'
-                  ? 'bg-emerald-400/10'
-                  : 'bg-red-400/10'
-              }`}
+              animate={statusState === 'pending' ? { scale: [1, 1.06, 1] } : {}}
+              transition={{ repeat: Infinity, duration: 1.8 }}
+              style={{
+                width: 64, height: 64, borderRadius: '50%',
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'center', fontSize: 26,
+                background:
+                  statusState === 'pending' ? 'rgba(251,191,36,0.12)' :
+                  statusState === 'success' ? 'rgba(52,211,153,0.12)' :
+                  'rgba(239,68,68,0.12)',
+              }}
             >
-              {!activeTransaction || activeTransaction.status === 'pending'
-                ? '⏳'
-                : activeTransaction.status === 'success'
-                ? '✓'
-                : '✕'}
+              {statusState === 'pending' ? '⏳'
+                : statusState === 'success' ? '✓' : '✕'}
             </motion.div>
 
-            {/* Status text */}
-            <div className="text-center">
-              <p className="text-base font-semibold text-white mb-1">
-                {!activeTransaction || activeTransaction.status === 'pending'
-                  ? 'Broadcasting Transaction...'
-                  : activeTransaction.status === 'success'
-                  ? 'Transaction Confirmed'
-                  : 'Transaction Failed'}
-              </p>
-              <p className="text-xs text-gray-500 leading-relaxed max-w-[240px]">
-                {!activeTransaction || activeTransaction.status === 'pending'
-                  ? 'Your transaction has been submitted to the network.'
-                  : activeTransaction.status === 'success'
-                  ? 'Your funds have been sent successfully.'
-                  : 'This transaction failed. You can retry from history.'}
-              </p>
+            {/* Title */}
+            <div style={{ fontSize: 17, fontWeight: 600, color: '#fff' }}>
+              {statusState === 'pending' ? 'Broadcasting...'
+                : statusState === 'success' ? 'Transaction Confirmed'
+                : 'Transaction Failed'}
             </div>
 
-            {activeTransaction && (
-              <StatusBadge status={activeTransaction.status} />
-            )}
+            {/* Description */}
+            <div style={{
+              fontSize: 12, color: '#6b7280',
+              lineHeight: 1.7, maxWidth: 260,
+            }}>
+              {statusState === 'pending'
+                ? 'Your transaction has been submitted to the network and is awaiting confirmation.'
+                : statusState === 'success'
+                ? 'Your funds have been sent successfully on the network.'
+                : 'This transaction failed due to insufficient gas or a network error. Your funds were not sent.'}
+            </div>
 
-            <Button
-              fullWidth
-              variant={
-                activeTransaction?.status === 'failed' ? 'danger' : 'secondary'
-              }
+            {/* Status badge */}
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              padding: '5px 12px', borderRadius: 20,
+              fontSize: 11, fontWeight: 500,
+              background:
+                statusState === 'pending' ? 'rgba(251,191,36,0.1)' :
+                statusState === 'success' ? 'rgba(52,211,153,0.1)' :
+                'rgba(239,68,68,0.1)',
+              border:
+                statusState === 'pending' ? '0.5px solid rgba(251,191,36,0.2)' :
+                statusState === 'success' ? '0.5px solid rgba(52,211,153,0.2)' :
+                '0.5px solid rgba(239,68,68,0.2)',
+              color:
+                statusState === 'pending' ? '#fbbf24' :
+                statusState === 'success' ? '#34d399' :
+                '#f87171',
+            }}>
+              <span style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: 'currentColor', display: 'inline-block',
+                animation: statusState === 'pending' ? 'pulse 1.5s infinite' : 'none',
+              }} />
+              {statusState === 'pending' ? 'Pending'
+                : statusState === 'success' ? 'Confirmed' : 'Failed'}
+            </div>
+
+            {/* CTA button */}
+            <button
               onClick={handleClose}
-              disabled={activeTransaction?.status === 'pending'}
-              className="mt-2"
+              disabled={statusState === 'pending'}
+              style={{
+                width: '100%', padding: 14, marginTop: 8,
+                background:
+                  statusState === 'failed'
+                    ? 'rgba(239,68,68,0.1)'
+                    : 'rgba(255,255,255,0.05)',
+                border:
+                  statusState === 'failed'
+                    ? '0.5px solid rgba(239,68,68,0.2)'
+                    : '0.5px solid rgba(255,255,255,0.1)',
+                borderRadius: 12, fontSize: 14, fontWeight: 600,
+                color: statusState === 'failed' ? '#f87171' : '#fff',
+                cursor: statusState === 'pending' ? 'not-allowed' : 'pointer',
+                opacity: statusState === 'pending' ? 0.5 : 1,
+                display: 'flex', alignItems: 'center',
+                justifyContent: 'center', gap: 8,
+                transition: 'opacity 0.2s',
+              }}
             >
-              {activeTransaction?.status === 'pending'
-                ? 'Processing...'
-                : 'Done'}
-            </Button>
+              {statusState === 'pending' ? (
+                <>
+                  <span style={{
+                    width: 14, height: 14,
+                    border: '2px solid rgba(255,255,255,0.2)',
+                    borderTopColor: '#fff', borderRadius: '50%',
+                    display: 'inline-block',
+                    animation: 'spin 0.8s linear infinite',
+                  }} />
+                  Processing...
+                </>
+              ) : 'Done'}
+            </button>
+
           </motion.div>
         )}
 

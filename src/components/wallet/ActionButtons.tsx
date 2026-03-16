@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion'
 import { ArrowUpRight, ArrowDownLeft, Plus, Link } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 interface ActionButtonsProps {
   onSend: () => void
@@ -17,29 +16,33 @@ const actions = [
     id: 'send',
     label: 'Send',
     icon: ArrowUpRight,
-    color: 'text-violet-400',
-    bg: 'bg-violet-500/10 hover:bg-violet-500/20 border-violet-500/20',
+    color: '#a78bfa',
+    bg: 'rgba(139,92,246,0.1)',
+    border: 'rgba(139,92,246,0.2)',
   },
   {
     id: 'receive',
     label: 'Receive',
     icon: ArrowDownLeft,
-    color: 'text-emerald-400',
-    bg: 'bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20',
+    color: '#34d399',
+    bg: 'rgba(52,211,153,0.1)',
+    border: 'rgba(52,211,153,0.2)',
   },
   {
     id: 'connect',
     label: 'Connect',
     icon: Link,
-    color: 'text-blue-400',
-    bg: 'bg-blue-500/10 hover:bg-blue-500/20 border-blue-500/20',
+    color: '#60a5fa',
+    bg: 'rgba(96,165,250,0.1)',
+    border: 'rgba(96,165,250,0.2)',
   },
   {
     id: 'create',
     label: 'Create',
     icon: Plus,
-    color: 'text-amber-400',
-    bg: 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/20',
+    color: '#fbbf24',
+    bg: 'rgba(251,191,36,0.1)',
+    border: 'rgba(251,191,36,0.2)',
   },
 ]
 
@@ -58,7 +61,14 @@ export function ActionButtons({
   }
 
   return (
-    <div className="grid grid-cols-4 gap-2.5 px-5 py-4 border-b border-white/[0.05]">
+    <div style={{
+      display: 'grid',
+      gridTemplateColumns: 'repeat(4, 1fr)',
+      gap: 10,
+      padding: '20px 20px',
+      borderBottom: '1px solid rgba(255,255,255,0.07)',
+      background: '#0a0a0f',
+    }}>
       {actions.map((action, i) => {
         const Icon = action.icon
         return (
@@ -70,13 +80,37 @@ export function ActionButtons({
             whileTap={{ scale: 0.94 }}
             onClick={handlers[action.id]}
             disabled={disabled}
-            className={cn(
-              'flex flex-col items-center gap-2 py-3.5 px-2 rounded-2xl border transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
-              action.bg
-            )}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 8,
+              padding: '16px 8px',
+              borderRadius: 16,
+              background: action.bg,
+              border: `0.5px solid ${action.border}`,
+              cursor: disabled ? 'not-allowed' : 'pointer',
+              opacity: disabled ? 0.4 : 1,
+              transition: 'background 0.2s',
+            }}
+            onMouseEnter={e => {
+              if (!disabled) e.currentTarget.style.background = action.bg.replace('0.1', '0.18')
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = action.bg
+            }}
           >
-            <Icon size={18} className={action.color} />
-            <span className={`text-[10px] font-semibold uppercase tracking-wider ${action.color}`}>
+            <Icon
+              size={18}
+              style={{ color: action.color, flexShrink: 0 }}
+            />
+            <span style={{
+              fontSize: 10,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: 0.5,
+              color: action.color,
+            }}>
               {action.label}
             </span>
           </motion.button>

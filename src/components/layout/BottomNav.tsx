@@ -1,8 +1,6 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Home, ArrowUpRight, ArrowDownLeft, History, Link } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 interface BottomNavProps {
   activeTab: string
@@ -10,50 +8,81 @@ interface BottomNavProps {
 }
 
 const tabs = [
-  { id: 'home',    label: 'Home',    icon: Home },
-  { id: 'send',    label: 'Send',    icon: ArrowUpRight },
-  { id: 'receive', label: 'Receive', icon: ArrowDownLeft },
-  { id: 'history', label: 'History', icon: History },
-  { id: 'connect', label: 'Connect', icon: Link },
+  { id: 'home',    label: 'Home',    icon: '⌂' },
+  { id: 'send',    label: 'Send',    icon: '↑' },
+  { id: 'receive', label: 'Receive', icon: '↓' },
+  { id: 'history', label: 'History', icon: '≡' },
+  { id: 'connect', label: 'Connect', icon: '⬡' },
 ]
 
 export function BottomNav({ activeTab, onTabChange }: BottomNavProps) {
   return (
-    <div className="flex items-center border-t border-white/[0.07] bg-[#111118] px-2">
+    <div style={{
+      display: 'flex',
+      background: '#111118',
+      borderTop: '1px solid rgba(255,255,255,0.07)',
+    }}>
       {tabs.map((tab) => {
-        const Icon = tab.icon
         const isActive = activeTab === tab.id
 
         return (
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className="relative flex-1 flex flex-col items-center gap-1 py-3 transition-colors"
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 4,
+              padding: '12px 4px 14px',
+              cursor: 'pointer',
+              background: 'transparent',
+              border: 'none',
+              position: 'relative',
+              transition: 'opacity 0.2s',
+            }}
           >
-            {/* Active indicator */}
+            {/* Active indicator line */}
             {isActive && (
               <motion.div
                 layoutId="bottomNavIndicator"
-                className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-violet-500 rounded-full"
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: 20,
+                  height: 2,
+                  background: '#8b5cf6',
+                  borderRadius: 2,
+                }}
                 transition={{ type: 'spring', damping: 20, stiffness: 300 }}
               />
             )}
 
-            <Icon
-              size={18}
-              className={cn(
-                'transition-colors',
-                isActive ? 'text-violet-400' : 'text-gray-600'
-              )}
-            />
-            <span
-              className={cn(
-                'text-[9px] font-medium uppercase tracking-wider transition-colors',
-                isActive ? 'text-violet-400' : 'text-gray-600'
-              )}
-            >
+            {/* Icon */}
+            <span style={{
+              fontSize: 17,
+              color: isActive ? '#a78bfa' : '#374151',
+              transition: 'color 0.2s',
+              lineHeight: 1,
+            }}>
+              {tab.icon}
+            </span>
+
+            {/* Label */}
+            <span style={{
+              fontSize: 9,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: 0.8,
+              color: isActive ? '#a78bfa' : '#374151',
+              transition: 'color 0.2s',
+            }}>
               {tab.label}
             </span>
+
           </button>
         )
       })}

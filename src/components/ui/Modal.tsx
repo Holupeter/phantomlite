@@ -2,64 +2,118 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { X } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 interface ModalProps {
   isOpen: boolean
   onClose: () => void
   title?: string
   children: React.ReactNode
-  className?: string
 }
 
-export function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children }: ModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
         <>
+
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40"
             onClick={onClose}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(0,0,0,0.75)',
+              zIndex: 40,
+            }}
           />
 
           {/* Modal panel */}
           <motion.div
-            initial={{ opacity: 0, y: 40, scale: 0.97 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 40, scale: 0.97 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className={cn(
-              'fixed bottom-0 left-0 right-0 z-50 bg-[#16161f] rounded-t-3xl border border-white/[0.07] max-w-md mx-auto',
-              className
-            )}
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 50,
+              background: '#16161f',
+              borderRadius: '22px 22px 0 0',
+              border: '0.5px solid rgba(255,255,255,0.08)',
+              borderBottom: 'none',
+              maxHeight: '88%',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
           >
+
             {/* Handle bar */}
-            <div className="flex justify-center pt-3 pb-1">
-              <div className="w-10 h-1 bg-white/10 rounded-full" />
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              padding: '12px 0 4px',
+              flexShrink: 0,
+            }}>
+              <div style={{
+                width: 36,
+                height: 4,
+                background: 'rgba(255,255,255,0.1)',
+                borderRadius: 2,
+              }} />
             </div>
 
             {/* Header */}
             {title && (
-              <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.07]">
-                <h2 className="text-base font-semibold text-white">{title}</h2>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 20px 14px',
+                borderBottom: '0.5px solid rgba(255,255,255,0.07)',
+                flexShrink: 0,
+              }}>
+                <span style={{
+                  fontSize: 15,
+                  fontWeight: 600,
+                  color: '#fff',
+                }}>
+                  {title}
+                </span>
                 <button
                   onClick={onClose}
-                  className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    background: 'rgba(255,255,255,0.06)',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#9ca3af',
+                  }}
                 >
-                  <X size={15} />
+                  <X size={13} />
                 </button>
               </div>
             )}
 
-            {/* Content */}
-            <div className="px-5 py-4 pb-8">
+            {/* Scrollable content */}
+            <div style={{
+              padding: '20px 20px 36px',
+              overflowY: 'auto',
+              flex: 1,
+            }}>
               {children}
             </div>
+
           </motion.div>
         </>
       )}

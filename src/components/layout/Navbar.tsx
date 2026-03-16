@@ -2,11 +2,10 @@
 
 import { motion, AnimatePresence } from 'framer-motion'
 import { useWallet } from '@/hooks/useWallet'
-import { useTransactionStore } from '@/store/transactionStore'
 import { shortenAddress } from '@/lib/utils'
 import { NETWORK_CONFIGS } from '@/lib/mockData'
 import { useState } from 'react'
-import { ChevronDown, Wifi, WifiOff } from 'lucide-react'
+import { ChevronDown, Wifi } from 'lucide-react'
 
 export function Navbar() {
   const { address, isConnected, network, handleNetworkSwitch, pendingTxCount } = useWallet()
@@ -15,31 +14,51 @@ export function Navbar() {
   const currentNetwork = NETWORK_CONFIGS.find((n) => n.id === network)
 
   return (
-    <div className="flex items-center justify-between px-5 py-3 border-b border-white/[0.07] bg-[#111118]">
+    <div style={{ background: '#111118', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+      className="flex items-center justify-between px-5 py-4"
+    >
 
       {/* Logo */}
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center">
-          <span className="text-white text-xs font-bold">PL</span>
+      <div className="flex items-center gap-2.5 flex-shrink-0">
+        <div
+          style={{ background: '#7c3aed', width: 34, height: 34, borderRadius: 10 }}
+          className="flex items-center justify-center flex-shrink-0"
+        >
+          <span className="text-white font-bold" style={{ fontSize: 11 }}>PL</span>
         </div>
-        <span className="text-sm font-bold text-white tracking-tight">
-          Phantom<span className="text-violet-400">Lite</span>
+        <span className="font-bold text-white whitespace-nowrap" style={{ fontSize: 14 }}>
+          Phantom<span style={{ color: '#a78bfa' }}>Lite</span>
         </span>
       </div>
 
-      <div className="flex items-center gap-2">
+      {/* Right pills */}
+      <div className="flex items-center gap-1 flex-shrink-0">
 
-        {/* Pending tx indicator */}
+        {/* Pending */}
         <AnimatePresence>
           {pendingTxCount > 0 && (
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400/10 border border-amber-400/20"
+              className="flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
+              style={{
+                padding: '6px 12px',
+                borderRadius: 20,
+                background: 'rgba(251,191,36,0.1)',
+                border: '0.5px solid rgba(251,191,36,0.2)',
+              }}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-              <span className="text-[10px] font-medium text-amber-400">
+              <span
+                className="flex-shrink-0"
+                style={{
+                  width: 7, height: 7, borderRadius: '50%',
+                  background: '#fbbf24',
+                  display: 'inline-block',
+                  animation: 'pulse 1.5s infinite',
+                }}
+              />
+              <span style={{ fontSize: 11, fontWeight: 500, color: '#fbbf24' }}>
                 {pendingTxCount} pending
               </span>
             </motion.div>
@@ -47,31 +66,45 @@ export function Navbar() {
         </AnimatePresence>
 
         {/* Network switcher */}
-        <div className="relative">
+        <div className="relative flex-shrink-0">
           <button
             onClick={() => setShowNetworkMenu(!showNetworkMenu)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+            className="flex items-center gap-1.5 whitespace-nowrap"
+            style={{
+              padding: '6px 12px',
+              borderRadius: 20,
+              background: 'rgba(255,255,255,0.05)',
+              border: '0.5px solid rgba(255,255,255,0.1)',
+            }}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-            <span className="text-[11px] font-medium text-gray-300">
+            <span
+              className="flex-shrink-0"
+              style={{ width: 7, height: 7, borderRadius: '50%', background: '#34d399', display: 'inline-block' }}
+            />
+            <span style={{ fontSize: 11, fontWeight: 500, color: '#d1d5db' }}>
               {currentNetwork?.label ?? 'Ethereum'}
             </span>
-            <ChevronDown size={11} className="text-gray-500" />
+            <ChevronDown size={11} style={{ color: '#6b7280' }} className="flex-shrink-0" />
           </button>
 
           <AnimatePresence>
             {showNetworkMenu && (
               <>
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowNetworkMenu(false)}
-                />
+                <div className="fixed inset-0 z-10" onClick={() => setShowNetworkMenu(false)} />
                 <motion.div
                   initial={{ opacity: 0, y: -8, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -8, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute right-0 top-full mt-2 w-40 bg-[#1e1e2a] border border-white/10 rounded-2xl overflow-hidden z-20 shadow-xl"
+                  className="absolute right-0 top-full mt-2 z-20"
+                  style={{
+                    width: 176,
+                    background: '#1e1e2a',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 16,
+                    overflow: 'hidden',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+                  }}
                 >
                   {NETWORK_CONFIGS.map((net) => (
                     <button
@@ -80,22 +113,28 @@ export function Navbar() {
                         handleNetworkSwitch(net.id)
                         setShowNetworkMenu(false)
                       }}
-                      className="w-full flex items-center gap-2.5 px-3.5 py-2.5 hover:bg-white/5 transition-colors"
+                      className="w-full flex items-center gap-3"
+                      style={{ padding: '12px 16px' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.05)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     >
                       <span
-                        className={`w-1.5 h-1.5 rounded-full ${
-                          net.id === network ? 'bg-emerald-400' : 'bg-white/20'
-                        }`}
+                        style={{
+                          width: 8, height: 8, borderRadius: '50%', flexShrink: 0,
+                          background: net.id === network ? '#34d399' : 'rgba(255,255,255,0.2)',
+                          display: 'inline-block',
+                        }}
                       />
-                      <span
-                        className={`text-xs font-medium ${
-                          net.id === network ? 'text-white' : 'text-gray-400'
-                        }`}
-                      >
+                      <span style={{
+                        fontSize: 12, fontWeight: 500,
+                        color: net.id === network ? '#fff' : '#9ca3af',
+                      }}>
                         {net.label}
                       </span>
                       {net.id === network && (
-                        <span className="ml-auto text-[10px] text-violet-400">Active</span>
+                        <span style={{ marginLeft: 'auto', fontSize: 10, color: '#a78bfa' }}>
+                          Active
+                        </span>
                       )}
                     </button>
                   ))}
@@ -105,15 +144,19 @@ export function Navbar() {
           </AnimatePresence>
         </div>
 
-        {/* Connection status / address */}
-        <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white/5 border border-white/10">
-          {isConnected ? (
-            <Wifi size={11} className="text-emerald-400" />
-          ) : (
-            <WifiOff size={11} className="text-gray-500" />
-          )}
-          <span className="text-[11px] font-medium text-gray-300">
-            {isConnected && address ? shortenAddress(address) : 'Not connected'}
+        {/* Address */}
+        <div
+          className="flex items-center gap-1.5 whitespace-nowrap flex-shrink-0"
+          style={{
+            padding: '6px 12px',
+            borderRadius: 20,
+            background: 'rgba(255,255,255,0.05)',
+            border: '0.5px solid rgba(255,255,255,0.1)',
+          }}
+        >
+          <Wifi size={11} style={{ color: isConnected ? '#34d399' : '#6b7280' }} className="flex-shrink-0" />
+          <span style={{ fontSize: 11, fontWeight: 500, color: '#d1d5db' }}>
+            {isConnected && address ? shortenAddress(address, 3) : 'Not connected'}
           </span>
         </div>
 

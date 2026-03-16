@@ -2,9 +2,7 @@
 
 import { motion } from 'framer-motion'
 import { useWallet } from '@/hooks/useWallet'
-import { formatUsd, formatCrypto, formatPriceChange } from '@/lib/utils'
 import { Asset } from '@/types'
-import { TrendingUp, TrendingDown } from 'lucide-react'
 
 const ASSET_ICONS: Record<string, string> = {
   ETH: 'Ξ',
@@ -13,50 +11,92 @@ const ASSET_ICONS: Record<string, string> = {
   MATIC: '⬡',
 }
 
+const ASSET_COLORS: Record<string, { color: string; bg: string }> = {
+  ETH:  { color: '#627eea', bg: 'rgba(98,126,234,0.15)' },
+  SOL:  { color: '#9945ff', bg: 'rgba(153,69,255,0.15)' },
+  USDC: { color: '#2775ca', bg: 'rgba(39,117,202,0.15)' },
+  MATIC:{ color: '#8247e5', bg: 'rgba(130,71,229,0.15)' },
+}
+
 function AssetRow({ asset, index }: { asset: Asset; index: number }) {
-  const isPositive = asset.priceChange24h >= 0
+  const isPositive = asset.priceChange24h > 0
+  const isFlat = asset.priceChange24h === 0
+  const colors = ASSET_COLORS[asset.symbol] ?? { color: '#9ca3af', bg: 'rgba(156,163,175,0.15)' }
+
+  const changeColor = isFlat ? '#6b7280' : isPositive ? '#34d399' : '#f87171'
+  const changePrefix = isFlat ? '' : isPositive ? '↑ +' : '↓ '
 
   return (
     <motion.div
       initial={{ opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.07, duration: 0.3 }}
-      className="flex items-center gap-3 px-5 py-3.5 hover:bg-white/[0.03] transition-colors cursor-pointer border-b border-white/[0.05] last:border-0"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 14,
+        padding: '14px 20px',
+        borderBottom: '0.5px solid rgba(255,255,255,0.04)',
+        cursor: 'pointer',
+        transition: 'background 0.15s',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.03)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
       {/* Icon */}
-      <div
-        className="w-10 h-10 rounded-full flex items-center justify-center text-base font-bold flex-shrink-0"
-        style={{ backgroundColor: `${asset.iconColor}20`, color: asset.iconColor }}
-      >
+      <div style={{
+        width: 40,
+        height: 40,
+        borderRadius: '50%',
+        background: colors.bg,
+        color: colors.color,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 14,
+        fontWeight: 700,
+        flexShrink: 0,
+      }}>
         {ASSET_ICONS[asset.symbol] ?? asset.symbol[0]}
       </div>
 
       {/* Name + balance */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white">{asset.name}</p>
-        <p className="text-xs text-gray-500 mt-0.5">
-          {formatCrypto(asset.balance, asset.symbol)}
-        </p>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: 13,
+          fontWeight: 500,
+          color: '#ffffff',
+          marginBottom: 2,
+        }}>
+          {asset.name}
+        </div>
+        <div style={{
+          fontSize: 11,
+          color: '#6b7280',
+        }}>
+          {asset.balance.toFixed(4)} {asset.symbol}
+        </div>
       </div>
 
       {/* Value + change */}
-      <div className="text-right flex-shrink-0">
-        <p className="text-sm font-medium text-white tabular-nums">
-          {formatUsd(asset.usdValue)}
-        </p>
-        <div
-          className={`flex items-center justify-end gap-0.5 mt-0.5 text-xs font-medium ${
-            isPositive ? 'text-emerald-400' : 'text-red-400'
-          }`}
-        >
-          {isPositive ? (
-            <TrendingUp size={10} />
-          ) : (
-            <TrendingDown size={10} />
-          )}
-          <span>{formatPriceChange(asset.priceChange24h)}</span>
+      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        <div style={{
+          fontSize: 13,
+          fontWeight: 500,
+          color: '#ffffff',
+          marginBottom: 2,
+          fontVariantNumeric: 'tabular-nums',
+        }}>
+          ${asset.usdValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </div>
+        <div style={{
+          fontSize: 11,
+          color: changeColor,
+        }}>
+          {changePrefix}{Math.abs(asset.priceChange24h).toFixed(2)}%
         </div>
       </div>
+
     </motion.div>
   )
 }
@@ -64,30 +104,60 @@ function AssetRow({ asset, index }: { asset: Asset; index: number }) {
 export function AssetList() {
   const { assets } = useWallet()
 
-  if (assets.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 gap-2">
-        <p className="text-sm text-gray-500">No assets found</p>
-        <p className="text-xs text-gray-600">Connect your wallet to see your assets</p>
-      </div>
-    )
-  }
-
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center justify-between px-5 py-3">
-        <span className="text-[11px] uppercase tracking-widest text-gray-500 font-medium">
+    <div>
+
+      {/* Section header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '18px 20px 10px',
+      }}>
+        <span style={{
+          fontSize: 10,
+          letterSpacing: 2,
+          textTransform: 'uppercase',
+          color: '#6b7280',
+          fontWeight: 500,
+        }}>
           Assets
         </span>
-        <span className="text-[11px] text-gray-600">
+        <span style={{
+          fontSize: 11,
+          color: '#4b5563',
+        }}>
           {assets.length} tokens
         </span>
       </div>
-      <div className="border-t border-white/[0.05]">
-        {assets.map((asset, i) => (
-          <AssetRow key={asset.id} asset={asset} index={i} />
-        ))}
+
+      {/* Rows */}
+      <div style={{ borderTop: '0.5px solid rgba(255,255,255,0.05)' }}>
+        {assets.length === 0 ? (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '48px 20px',
+            gap: 8,
+          }}>
+            <span style={{ fontSize: 13, color: '#6b7280' }}>No assets found</span>
+            <span style={{ fontSize: 11, color: '#4b5563' }}>
+              Connect your wallet to see your assets
+            </span>
+          </div>
+        ) : (
+          assets.map((asset, i) => (
+            <AssetRow
+              key={asset.id}
+              asset={asset}
+              index={i}
+            />
+          ))
+        )}
       </div>
+
     </div>
   )
 }

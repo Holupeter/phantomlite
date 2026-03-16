@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { Navbar } from '@/components/layout/Navbar'
 import { BottomNav } from '@/components/layout/BottomNav'
 import { BalanceCard } from '@/components/wallet/BalanceCard'
@@ -9,28 +9,26 @@ import { AssetList } from '@/components/wallet/AssetList'
 import { ActionButtons } from '@/components/wallet/ActionButtons'
 import { TransactionHistory } from '@/components/wallet/TransactionHistory'
 import { ConnectScreen } from '@/components/wallet/ConnectScreen'
+import { CreateWalletScreen } from '@/components/wallet/CreateWalletScreen'
 import { SendModal } from '@/components/wallet/SendModal'
 import { ReceiveModal } from '@/components/wallet/ReceiveModal'
-import { WalletSkeleton, TransactionSkeleton } from '@/components/ui/SkeletonLoader'
+import { WalletSkeleton } from '@/components/ui/SkeletonLoader'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { useWallet } from '@/hooks/useWallet'
-import { useEffect } from 'react'
 
-type Tab = 'home' | 'send' | 'receive' | 'history' | 'connect'
-
+type Tab = 'home' | 'history' | 'connect' | 'create'
 
 export default function Home() {
   const { isConnected, handleConnect } = useWallet()
   const [activeTab, setActiveTab] = useState<Tab>('home')
-  const [sendOpen, setSendOpen]     = useState(false)
+  const [sendOpen, setSendOpen] = useState(false)
   const [receiveOpen, setReceiveOpen] = useState(false)
-  const [isLoading, setIsLoading]   = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Simulate initial load
   useEffect(() => {
     const timer = setTimeout(async () => {
       setIsLoading(true)
-      await new Promise(resolve => setTimeout(resolve, 2500))
+      await new Promise((r) => setTimeout(r, 2500))
       await handleConnect('mock')
       setIsLoading(false)
     }, 100)
@@ -38,22 +36,33 @@ export default function Home() {
   }, [])
 
   const handleTabChange = (tab: string) => {
-    if (tab === 'send') {
-      setSendOpen(true)
-      return
-    }
-    if (tab === 'receive') {
-      setReceiveOpen(true)
-      return
-    }
+    if (tab === 'send') { setSendOpen(true); return }
+    if (tab === 'receive') { setReceiveOpen(true); return }
     setActiveTab(tab as Tab)
   }
 
   return (
-    <main className="min-h-screen bg-[#0a0a0f] flex items-center justify-center p-4">
-      <div className="w-full max-w-sm bg-[#0a0a0f] rounded-[28px] border border-white/[0.07] overflow-hidden flex flex-col shadow-2xl"
-        style={{ minHeight: '680px', maxHeight: '780px' }}
-      >
+    <main style={{
+      minHeight: '100vh',
+      background: '#060608',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 16,
+    }}>
+      <div style={{
+        width: '100%',
+        maxWidth: 448,
+        height: 710,
+        background: '#0a0a0f',
+        borderRadius: 28,
+        border: '1px solid rgba(255,255,255,0.07)',
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        position: 'relative',
+        boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
+      }}>
 
         {/* Navbar */}
         <ErrorBoundary>
@@ -61,7 +70,11 @@ export default function Home() {
         </ErrorBoundary>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto">
+        <div style={{
+          flex: 1,
+          overflowY: 'auto',
+          minHeight: 0,
+        }}>
           <ErrorBoundary>
             <AnimatePresence mode="wait">
 
@@ -72,47 +85,51 @@ export default function Home() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.22, ease: 'easeInOut'}}
+                  transition={{ duration: 0.22, ease: 'easeInOut' }}
                 >
                   <WalletSkeleton />
                 </motion.div>
               )}
 
-              {/* Home tab */}
+              {/* Home */}
               {!isLoading && activeTab === 'home' && (
                 <motion.div
                   key="home"
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.22, ease: 'easeInOut'}}
+                  transition={{ duration: 0.22, ease: 'easeInOut' }}
                 >
                   <BalanceCard />
                   <ActionButtons
                     onSend={() => setSendOpen(true)}
                     onReceive={() => setReceiveOpen(true)}
                     onConnect={() => setActiveTab('connect')}
-                    onCreate={() => setActiveTab('connect')}
+                    onCreate={() => setActiveTab('create')}
                     disabled={!isConnected}
                   />
                   <AssetList />
                 </motion.div>
               )}
 
-              {/* History tab */}
+              {/* History */}
               {!isLoading && activeTab === 'history' && (
                 <motion.div
                   key="history"
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.22, ease: 'easeInOut'}}
+                  transition={{ duration: 0.22, ease: 'easeInOut' }}
                 >
-                  <div className="px-5 pt-5 pb-2">
-                    <h1 className="text-base font-semibold text-white">
+                  <div style={{ padding: '24px 20px 8px' }}>
+                    <p style={{
+                      fontSize: 18, fontWeight: 700, color: '#fff',
+                    }}>
                       Transaction History
-                    </h1>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    </p>
+                    <p style={{
+                      fontSize: 12, color: '#6b7280', marginTop: 4,
+                    }}>
                       All your recent activity
                     </p>
                   </div>
@@ -120,24 +137,41 @@ export default function Home() {
                 </motion.div>
               )}
 
-              {/* Connect tab */}
+              {/* Connect */}
               {!isLoading && activeTab === 'connect' && (
                 <motion.div
                   key="connect"
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -12 }}
-                  transition={{ duration: 0.22, ease: 'easeInOut'}}
+                  transition={{ duration: 0.22, ease: 'easeInOut' }}
                 >
-                  <div className="px-5 pt-5 pb-2">
-                    <h1 className="text-base font-semibold text-white">
+                  <div style={{ padding: '24px 20px 8px' }}>
+                    <p style={{
+                      fontSize: 18, fontWeight: 700, color: '#fff',
+                    }}>
                       Connect Wallet
-                    </h1>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    </p>
+                    <p style={{
+                      fontSize: 12, color: '#6b7280', marginTop: 4,
+                    }}>
                       Link your existing wallet
                     </p>
                   </div>
                   <ConnectScreen />
+                </motion.div>
+              )}
+
+              {/* Create */}
+              {!isLoading && activeTab === 'create' && (
+                <motion.div
+                  key="create"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -12 }}
+                  transition={{ duration: 0.22, ease: 'easeInOut' }}
+                >
+                  <CreateWalletScreen />
                 </motion.div>
               )}
 
@@ -155,18 +189,17 @@ export default function Home() {
           </ErrorBoundary>
         )}
 
+        {/* Modals — rendered inside the card */}
+        <SendModal
+          isOpen={sendOpen}
+          onClose={() => setSendOpen(false)}
+        />
+        <ReceiveModal
+          isOpen={receiveOpen}
+          onClose={() => setReceiveOpen(false)}
+        />
+
       </div>
-
-      {/* Modals */}
-      <SendModal
-        isOpen={sendOpen}
-        onClose={() => setSendOpen(false)}
-      />
-      <ReceiveModal
-        isOpen={receiveOpen}
-        onClose={() => setReceiveOpen(false)}
-      />
-
     </main>
   )
 }
