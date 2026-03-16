@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 * {
   box-sizing: border-box;
@@ -12,12 +10,10 @@ html,
 body {
   background: #0a0a0f;
   color: #e8e6f0;
-  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 4px;
 }
@@ -35,7 +31,6 @@ body {
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* Remove number input arrows */
 input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
@@ -46,7 +41,6 @@ input[type='number'] {
   -moz-appearance: textfield;
 }
 
-/* Select styling */
 select option {
   background: #1e1e2a;
   color: #e8e6f0;
